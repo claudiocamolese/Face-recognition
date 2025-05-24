@@ -150,4 +150,182 @@ class CustomPCA:
         eigenvalues = eigenvalues[idx]
         eigenvectors = eigenvectors[:, idx]
         
-        return eigen
+        return eigenvalues, eigenvectors
+    
+    def fit(self, X: np.ndarray, n_components: Optional[int] = None) -> 'CustomPCA':
+        """
+        Fit the PCA model to the data.
+        
+        Args:
+            X: Input data matrix of shape (n_samples, n_features)
+            n_components: Number of components to keep
+            
+        Returns:
+            Self
+        """
+        X = np.asarray(X)
+        self.n_samples_, self.n_features_ = X.shape
+        
+        if n_components is None:
+            n_components = min(self.n_samples_, self.n_features_)
+        
+        self.n_components_ = min(n_components, self.n_features_)
+        
+        # Center the data
+        X_centered = self._center_data(X)
+        
+        # Compute covariance matrix
+        cov_matrix = self._compute_covariance_matrix(X_centered)
+        
+        # Perform eigenvalue decomposition
+        eigenvalues, eigenvectors = self._custom_eigh(cov_matrix, self.n_components_)
+        
+        # Store results
+        self.explained_variance_ = eigenvalues
+        self.components_ = eigenvectors.T  # Components are rows
+        
+        # Compute explained variance ratio
+        total_variance = np.sum(eigenvalues) if len(eigenvalues) > 0 else 1.0
+        self.explained_variance_ratio_ = eigenvalues / total_variance
+        
+        # Compute singular values (relationship: singular_value = sqrt(eigenvalue * (n_samples - 1)))
+        self.singular_values_ = np.sqrt(eigenvalues * (self.n_samples_ - 1))
+        
+        return self
+    
+    def transform(self, X: np.ndarray) -> np.ndarray:
+        """
+        Transform data to lower dimensional space.
+        
+        Args:
+            X: Input data matrix
+            
+        Returns:
+            Transformed data
+        """
+        if self.components_ is None:
+            raise ValueError("Model has not been fitted yet. Call fit() first.")
+        
+        X = np.asarray(X)
+        X_centered = X - self.mean_
+        
+        return X_centered @ self.components_.T
+    
+    def fit_transform(self, X: np.ndarray, n_components: Optional[int] = None) -> np.ndarray:
+        """
+        Fit the model and transform the data.
+        
+        Args:
+            X: Input data matrix
+            n_components: Number of components to keep
+            
+        Returns:
+            Transformed data
+        """
+        return self.fit(X, n_components).transform(X)
+    
+    def inverse_transform(self, X_transformed: np.ndarray) -> np.ndarray:
+        """
+        Transform data back to original space.
+        
+        Args:
+            X_transformed: Transformed data
+            
+        Returns:
+            Data in original space
+        """
+        if self.components_ is None:
+            raise ValueError("Model has not been fitted yet. Call fit() first.")
+        
+        X_transformed = np.asarray(X_transformed)
+        
+        # Reconstruct in original space
+        X_reconstructed = X_transformed @ self.components_
+        
+        # Add back the mean
+        return X_reconstructed + self.mean_
+    
+    def get_covariance(self) -> np.ndarray:
+        """
+        Compute data covariance with the fitted model.
+        
+        Returns:
+            Estimated covariance matrix
+        """
+        if self.components_ is None:
+            raise ValueError("Model has not been fitted yet. Call fit() first.")
+        
+        return (self.components_.T * self.explained_variance_) @ self.components_
+    
+    def get_precision(self) -> np.ndarray:
+        """
+        Compute data precision matrix with the fitted model.
+        
+        Returns:
+            Estimated precision matrix
+        """
+        covariance = self.get_covariance()
+        
+        # Add small regularization for numerical stability
+        reg = 1e-12 * np.eye(covariance.shape[0])
+        
+        try:
+            precision = np.linalg.inv(covariance + reg)
+        except np.linalg.LinAlgError:
+            # Use pseudoinverse if matrix is singular
+            precision = np.linalg.pinv(covariance + reg)
+        
+        return precision
+    
+    def score(self, X: np.ndarray) -> float:
+        """
+        Return the average log-likelihood of the data.
+        
+        Args:
+            X: Input data matrix
+            
+        Returns:
+            Average log-likelihood
+        """
+        if self.components_ is None:
+            raise ValueError("Model has not been fitted yet. Call fit() first.")
+        
+        X = np.asarray(X)
+        X_centered = X - self.mean_
+        
+        # Transform and inverse transform to get reconstruction
+        X_transformed = self.transform(X)
+        X_reconstructed = self.inverse_transform(X_transformed)
+        
+        # Compute reconstruction error
+        reconstruction_error = np.sum((X - X_reconstructed) ** 2, axis=1)
+        
+        # Return negative mean squared error as score
+        return -np.mean(reconstruction_error)
+    
+    def explained_variance_ratio_cumsum(self) -> np.ndarray:
+        """
+        Get cumulative explained variance ratio.
+        
+        Returns:
+            Cumulative explained variance ratio
+        """
+        if self.explained_variance_ratio_ is None:
+            raise ValueError("Model has not been fitted yet. Call fit() first.")
+        
+        return np.cumsum(self.explained_variance_ratio_)
+    
+    def get_feature_names_out(self, input_features: Optional[list] = None) -> list:
+        """
+        Get output feature names for transformation.
+        
+        Args:
+            input_features: Input feature names
+            
+        Returns:
+            Output feature names
+        """
+        if self.n_components_ is None:
+            raise ValueError("Model has not been fitted yet. Call fit() first.")
+        
+        return [f"pca{i}" for i in range(self.n_components_)]

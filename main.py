@@ -1,3 +1,37 @@
+
+"""
+Face Recognition System with Custom SVD Implementation
+====================================================
+
+Project Structure:
+├── main.py
+├── config/
+│   └── settings.py
+├── src/
+│   ├── __init__.py
+│   ├── data/
+│   │   ├── __init__.py
+│   │   └── loader.py
+│   ├── preprocessing/
+│   │   ├── __init__.py
+│   │   └── image_processor.py
+│   ├── models/
+│   │   ├── __init__.py
+│   │   ├── svd_decomposition.py
+│   │   ├── pca_decomposition.py
+│   │   └── knn_classifier.py
+│   ├── visualization/
+│   │   ├── __init__.py
+│   │   └── plotter.py
+│   └── utils/
+│       ├── __init__.py
+│       └── helpers.py
+└── tests/
+    ├── __init__.py
+    └── test_svd.py
+"""
+
+
 import os
 import sys
 import numpy as np
