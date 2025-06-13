@@ -3,7 +3,7 @@
 This repository implements a face recognition system using **Singular Value Decomposition (SVD)** for dimensionality reduction and a **K-Nearest Classifier (KNC)** for identity recognition. The approach is inspired by the classical **eigenfaces** technique and provides an effective way to handle high-dimensional facial image data.
 
 
-## 🔍 Overview
+##  Overview
 
 Face recognition is a task in computer vision where the goal is to identify or verify a person from a facial image. In this project:
 
@@ -14,7 +14,7 @@ Face recognition is a task in computer vision where the goal is to identify or v
 This combination provides both efficiency (thanks to dimensionality reduction) and flexibility (thanks to the non-parametric nature of KNC).
 
 
-## 🧠 Singular Value Decomposition (SVD)
+##  Singular Value Decomposition (SVD)
 
 Singular Value Decomposition is a matrix factorization technique used to reduce data dimensionality. It factorizes the data matrix as:
 
@@ -36,7 +36,7 @@ Where:
 - **Efficiency**: It significantly reduces computation time for training and classification.
 
 
-## 📊 Classification with K-Nearest Classifier (KNC)
+##  Classification with K-Nearest Classifier (KNC)
 
 After SVD, faces are represented as low-dimensional vectors in feature space. Classification is performed using the **K-Nearest Classifier**, which assigns a label to a new image based on the majority label among its $k$ closest training samples.
 
